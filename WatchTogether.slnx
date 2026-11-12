@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="WatchTogether.API/WatchTogether.API.csproj" />
+  <Project Path="WatchTogether.Core/WatchTogether.Core.csproj" />
+  <Project Path="WatchTogether.Infrastructure/WatchTogether.Infrastructure.csproj" />
+</Solution>
