@@ -1,5 +1,169 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
+  font-family: system-ui, sans-serif;
   background: #0f1115;
   color: #e6e8ee;
+}
+
+a {
+  color: #8f88ff;
+}
+
+.muted {
+  color: #aab0bf;
+}
+
+.small {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: #171a21;
+  border: 1px solid #262b36;
+  border-radius: 12px;
+  padding: 32px;
+}
+
+.brand {
+  margin: 0 0 24px;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.page-title {
+  margin: 0 0 20px;
+  font-size: 1.2rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.875rem;
+  color: #aab0bf;
+}
+
+.field input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #2e3441;
+  background: #0f1115;
+  color: inherit;
+  font-size: 1rem;
+}
+
+.field input:focus {
+  outline: 2px solid #6c63ff;
+  border-color: transparent;
+}
+
+.button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #6c63ff;
+  color: #ffffff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  background: #262b36;
+}
+
+.error-list {
+  margin: 0;
+  padding: 10px 14px 10px 30px;
+  background: #3a1d22;
+  border: 1px solid #6b2b33;
+  border-radius: 8px;
+  color: #ffb3ba;
+  font-size: 0.9rem;
+}
+
+.success-message {
+  margin: 0;
+  padding: 10px 14px;
+  background: #16301f;
+  border: 1px solid #25623a;
+  border-radius: 8px;
+  color: #9be3b0;
+  font-size: 0.9rem;
+}
+
+.form-footer {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #aab0bf;
+}
+
+.dashboard {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.brand-left {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.card {
+  background: #171a21;
+  border: 1px solid #262b36;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.card h2 {
+  margin-top: 0;
 }

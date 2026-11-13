@@ -1,47 +1,24 @@
-import { useEffect, useState } from 'react';
-import { getHealth } from './services/healthService';
+import { Navigate, Route, Routes } from 'react-router';
+import ProtectedRoute from './components/ProtectedRoute';
+import AuthLayout from './layouts/AuthLayout';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import Register from './pages/Register';
 
 function App() {
-  const [health, setHealth] = useState(null);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function checkBackend() {
-      try {
-        const result = await getHealth();
-        setHealth(result);
-      } catch (error) {
-        if (error.status) {
-          setErrorMessage(`The API replied with an error (status ${error.status}). Check the database connection.`);
-        } else {
-          setErrorMessage('Could not reach the API. Is it running on http://localhost:5000? A CORS problem also looks like this.');
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    checkBackend();
-  }, []);
-
   return (
-    <div style={{ maxWidth: 520, margin: '80px auto', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Watch Together</h1>
-      <h2>System check</h2>
+    <Routes>
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Route>
 
-      {isLoading && <p>Checking the backend...</p>}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Route>
 
-      {errorMessage && <p style={{ color: '#ff6b6b' }}>❌ {errorMessage}</p>}
-
-      {health && (
-        <ul>
-          <li>✅ API: {health.status}</li>
-          <li>✅ Database: {health.database}</li>
-          <li>Server time (UTC): {health.serverTimeUtc}</li>
-        </ul>
-      )}
-    </div>
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   );
 }
 
