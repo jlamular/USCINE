@@ -11,6 +11,10 @@ public class AppDbContext : IdentityUserContext<ApplicationUser>
     {
     }
 
+    public DbSet<WatchRoom> WatchRooms => Set<WatchRoom>();
+
+    public DbSet<RoomParticipant> RoomParticipants => Set<RoomParticipant>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -21,5 +25,16 @@ public class AppDbContext : IdentityUserContext<ApplicationUser>
                   .IsRequired()
                   .HasMaxLength(32);
         });
+
+        // Picks up WatchRoomConfiguration, RoomParticipantConfiguration, and any future ones
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+
+        // Every DateTime in the model is read back as UTC
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
     }
 }

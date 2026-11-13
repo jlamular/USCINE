@@ -27,6 +27,7 @@ if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Le
 // 2. Register services
 builder.Services.AddInfrastructure(connectionString, jwtSettings);
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
 
 builder.Services
     .AddControllers()

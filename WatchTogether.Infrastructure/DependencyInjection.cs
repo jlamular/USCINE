@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using WatchTogether.Core.Entities;
 using WatchTogether.Core.Interfaces;
 using WatchTogether.Infrastructure.Data;
+using WatchTogether.Infrastructure.Repositories;
 using WatchTogether.Infrastructure.Services;
 using WatchTogether.Infrastructure.Settings;
 
@@ -20,6 +21,7 @@ public static class DependencyInjection
 
         services.AddSingleton(jwtSettings);
         services.AddScoped<ITokenService, JwtTokenService>();
+        services.AddScoped<IRoomRepository, RoomRepository>();
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

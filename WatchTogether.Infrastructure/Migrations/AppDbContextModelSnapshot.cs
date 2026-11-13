@@ -161,6 +161,70 @@ namespace WatchTogether.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("WatchTogether.Core.Entities.RoomParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RoomId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("RoomParticipants");
+                });
+
+            modelBuilder.Entity("WatchTogether.Core.Entities.WatchRoom", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HostUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("RoomCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
+
+                    b.Property<string>("RoomName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HostUserId");
+
+                    b.HasIndex("RoomCode")
+                        .IsUnique();
+
+                    b.ToTable("WatchRooms");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
                     b.HasOne("WatchTogether.Core.Entities.ApplicationUser", null)
@@ -186,6 +250,41 @@ namespace WatchTogether.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("WatchTogether.Core.Entities.RoomParticipant", b =>
+                {
+                    b.HasOne("WatchTogether.Core.Entities.WatchRoom", "Room")
+                        .WithMany("Participants")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WatchTogether.Core.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Room");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("WatchTogether.Core.Entities.WatchRoom", b =>
+                {
+                    b.HasOne("WatchTogether.Core.Entities.ApplicationUser", "HostUser")
+                        .WithMany()
+                        .HasForeignKey("HostUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("HostUser");
+                });
+
+            modelBuilder.Entity("WatchTogether.Core.Entities.WatchRoom", b =>
+                {
+                    b.Navigation("Participants");
                 });
 #pragma warning restore 612, 618
         }
