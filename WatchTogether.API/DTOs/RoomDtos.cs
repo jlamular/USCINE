@@ -24,6 +24,8 @@ public class ParticipantDto
 
     public bool IsHost { get; set; }
 
+    public bool IsOnline { get; set; }
+
     public DateTime JoinedAt { get; set; }
 }
 
@@ -57,6 +59,15 @@ public class RoomDetailsDto
     public bool IsHost { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    public List<ParticipantDto> Participants { get; set; } = new List<ParticipantDto>();
+}
+
+// Sent to everyone in a room over SignalR. It has nothing specific to one viewer,
+// because the same message goes to every connection in the group.
+public class RoomStateDto
+{
+    public Guid RoomId { get; set; }
 
     public List<ParticipantDto> Participants { get; set; } = new List<ParticipantDto>();
 }

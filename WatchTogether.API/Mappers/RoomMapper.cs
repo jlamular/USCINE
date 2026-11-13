@@ -19,7 +19,10 @@ public static class RoomMapper
         };
     }
 
-    public static RoomDetailsDto ToDetails(WatchRoom room, string currentUserId)
+    public static RoomDetailsDto ToDetails(
+        WatchRoom room,
+        string currentUserId,
+        IReadOnlyCollection<string> onlineUserIds)
     {
         return new RoomDetailsDto
         {
@@ -29,16 +32,33 @@ public static class RoomMapper
             HostUserId = room.HostUserId,
             IsHost = room.HostUserId == currentUserId,
             CreatedAt = room.CreatedAtUtc,
-            Participants = room.Participants
-                .OrderBy(participant => participant.JoinedAtUtc)
-                .Select(participant => new ParticipantDto
-                {
-                    UserId = participant.UserId,
-                    DisplayName = participant.User?.DisplayName ?? string.Empty,
-                    IsHost = participant.UserId == room.HostUserId,
-                    JoinedAt = participant.JoinedAtUtc
-                })
-                .ToList()
+            Participants = ToParticipantDtos(room, onlineUserIds)
         };
+    }
+
+    public static RoomStateDto ToRoomState(WatchRoom room, IReadOnlyCollection<string> onlineUserIds)
+    {
+        return new RoomStateDto
+        {
+            RoomId = room.Id,
+            Participants = ToParticipantDtos(room, onlineUserIds)
+        };
+    }
+
+    private static List<ParticipantDto> ToParticipantDtos(
+        WatchRoom room,
+        IReadOnlyCollection<string> onlineUserIds)
+    {
+        return room.Participants
+            .OrderBy(participant => participant.JoinedAtUtc)
+            .Select(participant => new ParticipantDto
+            {
+                UserId = participant.UserId,
+                DisplayName = participant.User?.DisplayName ?? string.Empty,
+                IsHost = participant.UserId == room.HostUserId,
+                IsOnline = onlineUserIds.Contains(participant.UserId),
+                JoinedAt = participant.JoinedAtUtc
+            })
+            .ToList();
     }
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using WatchTogether.API.DTOs;
+using WatchTogether.API.Hubs;
 using WatchTogether.API.Middleware;
 using WatchTogether.Core.Interfaces;
 using WatchTogether.Core.Services;
@@ -28,6 +29,11 @@ if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Le
 builder.Services.AddInfrastructure(connectionString, jwtSettings);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
+
+// Presence is live, shared state, so there is exactly one tracker for the whole application
+builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
+builder.Services.AddScoped<IRoomNotifier, RoomNotifier>();
+builder.Services.AddSignalR();
 
 builder.Services
     .AddControllers()
@@ -69,6 +75,24 @@ builder.Services
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
+
+        // Browsers cannot put an Authorization header on a WebSocket, so SignalR sends the token
+        // as ?access_token=... . We accept that ONLY for the hub path.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                string? accessToken = context.Request.Query["access_token"];
+                PathString path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/room"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -94,5 +118,6 @@ app.UseCors(FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<WatchRoomHub>("/hubs/room");
 
 app.Run();
