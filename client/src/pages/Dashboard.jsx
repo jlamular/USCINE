@@ -1,19 +1,53 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import ErrorList from '../components/ErrorList';
+import RoomCard from '../components/RoomCard';
 import { useAuth } from '../hooks/useAuth';
+import { getMyRooms } from '../services/roomService';
 import { formatDate } from '../utils/dateUtils';
 
 function Dashboard() {
-  const { user, logout, updateDisplayName } = useAuth();
+  const { user, updateDisplayName } = useAuth();
+
+  const [rooms, setRooms] = useState([]);
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true);
+  const [roomErrors, setRoomErrors] = useState([]);
 
   const [displayName, setDisplayName] = useState(user.displayName);
-  const [errors, setErrors] = useState([]);
+  const [nameErrors, setNameErrors] = useState([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  async function handleSave(event) {
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadRooms() {
+      try {
+        const loadedRooms = await getMyRooms();
+        if (!isCancelled) {
+          setRooms(loadedRooms);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setRoomErrors(error.errors ?? ['Could not load your rooms.']);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingRooms(false);
+        }
+      }
+    }
+
+    loadRooms();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  async function handleSaveName(event) {
     event.preventDefault();
-    setErrors([]);
+    setNameErrors([]);
     setSuccessMessage('');
     setIsSaving(true);
 
@@ -21,31 +55,54 @@ function Dashboard() {
       await updateDisplayName(displayName);
       setSuccessMessage('Display name updated.');
     } catch (error) {
-      setErrors(error.errors ?? ['Something went wrong. Please try again.']);
+      setNameErrors(error.errors ?? ['Something went wrong. Please try again.']);
     } finally {
       setIsSaving(false);
     }
   }
 
   return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <h1 className="brand-left">Watch Together</h1>
-        <div className="header-user">
-          <span>{user.displayName}</span>
-          <button className="button button-secondary" type="button" onClick={logout}>
-            Log out
-          </button>
+    <>
+      <section>
+        <div className="toolbar">
+          <h2>Your rooms</h2>
+          <div className="toolbar-actions">
+            <Link to="/rooms/join" className="button button-secondary">
+              Join room
+            </Link>
+            <Link to="/rooms/new" className="button">
+              Create room
+            </Link>
+          </div>
         </div>
-      </header>
 
-      <section className="card">
+        <ErrorList errors={roomErrors} />
+
+        {isLoadingRooms && <p className="muted">Loading your rooms...</p>}
+
+        {!isLoadingRooms && roomErrors.length === 0 && rooms.length === 0 && (
+          <div className="empty-state">
+            <p>You are not in any rooms yet.</p>
+            <p>Create one, or join a friend's room with its code.</p>
+          </div>
+        )}
+
+        {rooms.length > 0 && (
+          <div className="room-grid">
+            {rooms.map((room) => (
+              <RoomCard key={room.id} room={room} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="card" style={{ marginTop: 32 }}>
         <h2>Your account</h2>
         <p className="muted">Email: {user.email}</p>
         <p className="muted">Member since: {formatDate(user.createdAt)}</p>
 
-        <form className="form" onSubmit={handleSave}>
-          <ErrorList errors={errors} />
+        <form className="form" onSubmit={handleSaveName}>
+          <ErrorList errors={nameErrors} />
           {successMessage && <p className="success-message">{successMessage}</p>}
 
           <div className="field">
@@ -66,12 +123,7 @@ function Dashboard() {
           </button>
         </form>
       </section>
-
-      <section className="card">
-        <h2>Your rooms</h2>
-        <p className="muted">Creating and joining watch rooms arrives in Phase 4.</p>
-      </section>
-    </div>
+    </>
   );
 }
 

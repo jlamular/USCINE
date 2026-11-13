@@ -70,7 +70,7 @@ function Login() {
       </form>
 
       <p className="form-footer">
-        New here? <Link to="/register">Create an account</Link>
+        New here? <Link to="/register" state={location.state}>Create an account</Link>
       </p>
     </>
   );

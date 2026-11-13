@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 import ErrorList from '../components/ErrorList';
 import { useAuth } from '../hooks/useAuth';
 
 function Register() {
   const { user, register } = useAuth();
-
+  const location = useLocation();
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const redirectPath = location.state?.from?.pathname || '/dashboard';
   if (user) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={redirectPath} replace />;
   }
 
   async function handleSubmit(event) {
@@ -103,7 +103,7 @@ function Register() {
       </form>
 
       <p className="form-footer">
-        Already have an account? <Link to="/login">Log in</Link>
+        Already have an account? <Link to="/login" state={location.state}>Log in</Link>
       </p>
     </>
   );
