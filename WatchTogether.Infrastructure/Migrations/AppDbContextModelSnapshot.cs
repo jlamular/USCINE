@@ -257,6 +257,19 @@ namespace WatchTogether.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<bool>("IsPlaying")
+                        .HasColumnType("bit");
+
+                    b.Property<double>("PlaybackPositionSeconds")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("PlaybackUpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("PlaybackVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.Property<string>("RoomCode")
                         .IsRequired()
                         .HasMaxLength(8)

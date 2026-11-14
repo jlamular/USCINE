@@ -43,7 +43,8 @@ public class RoomService : IRoomService
             RoomCode = roomCode,
             RoomName = cleanName,
             HostUserId = userId,
-            CreatedAtUtc = now
+            CreatedAtUtc = now,
+            PlaybackUpdatedAtUtc = now
         };
 
         // The creator is automatically the host and the first participant
@@ -193,7 +194,10 @@ public class RoomService : IRoomService
 
             room.CurrentVideoId = video.Id;
             room.CurrentVideo = video;
+                    
         }
+        // A new (or removed) video always starts again from the beginning, paused
+        room.ResetPlayback(DateTime.UtcNow);
 
         await _roomRepository.SaveChangesAsync();
 

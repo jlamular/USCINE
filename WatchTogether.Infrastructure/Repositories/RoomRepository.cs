@@ -82,4 +82,24 @@ public class RoomRepository : IRoomRepository
     {
         await _dbContext.SaveChangesAsync();
     }
+
+        // Returns false (instead of throwing) when someone else changed the same room at the same moment
+    public async Task<bool> TrySaveChangesAsync()
+    {
+        try
+        {
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return false;
+        }
+    }
+
+    // Forgets everything this request loaded, so the next read comes fresh from the database
+    public void ClearTracking()
+    {
+        _dbContext.ChangeTracker.Clear();
+    }
 }

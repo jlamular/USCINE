@@ -45,6 +45,7 @@ builder.Services.AddSingleton(new VideoUploadOptions
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<IPlaybackService, PlaybackService>();
 
 // Presence is live, shared state, so there is exactly one tracker for the whole application
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();

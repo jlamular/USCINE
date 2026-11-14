@@ -93,6 +93,7 @@ public class VideosController : ControllerBase
 
         // If it was the video being shown, everyone's room state just changed
         await _roomNotifier.NotifyRoomStateChangedAsync(result.Value!.RoomId);
+        await _roomNotifier.NotifyPlaybackChangedAsync(result.Value!.RoomId);
 
         return NoContent();
     }

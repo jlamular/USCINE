@@ -23,4 +23,7 @@ public interface IRoomRepository
     Task DeleteRoomAsync(WatchRoom room);
 
     Task SaveChangesAsync();
+    Task<bool> TrySaveChangesAsync();
+
+void ClearTracking();
 }

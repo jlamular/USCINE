@@ -46,5 +46,8 @@ public class WatchRoomConfiguration : IEntityTypeConfiguration<WatchRoom>
                .WithMany()
                .HasForeignKey(room => room.CurrentVideoId)
                .OnDelete(DeleteBehavior.Restrict);
+
+               // Makes EF refuse to overwrite a playback change it has not seen (see PlaybackService)
+        builder.Property(room => room.PlaybackVersion).IsConcurrencyToken();
     }
 }

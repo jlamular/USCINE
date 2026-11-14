@@ -1,5 +1,6 @@
 using WatchTogether.API.DTOs;
 using WatchTogether.Core.Entities;
+using WatchTogether.Core.Models;
 
 namespace WatchTogether.API.Mappers;
 
@@ -76,5 +77,20 @@ public static class RoomMapper
                 JoinedAt = participant.JoinedAtUtc
             })
             .ToList();
+    }
+    public static PlaybackStateDto ToPlaybackDto(PlaybackState state)
+    {
+        DateTime updatedAtUtc = DateTime.SpecifyKind(state.UpdatedAtUtc, DateTimeKind.Utc);
+
+        return new PlaybackStateDto
+        {
+            RoomId = state.RoomId,
+            VideoId = state.VideoId,
+            IsPlaying = state.IsPlaying,
+            PositionSeconds = state.PositionSeconds,
+            UpdatedAtUnixMs = new DateTimeOffset(updatedAtUtc).ToUnixTimeMilliseconds(),
+            ServerTimeUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            Version = state.Version
+        };
     }
 }

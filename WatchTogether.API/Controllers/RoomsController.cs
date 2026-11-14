@@ -144,6 +144,7 @@ public class RoomsController : ControllerBase
 
         // Everyone who has the room open learns about the new video immediately
         await _roomNotifier.NotifyRoomStateChangedAsync(roomId);
+        await _roomNotifier.NotifyPlaybackChangedAsync(roomId);
 
         WatchRoom room = result.Value!;
         return Ok(RoomMapper.ToDetails(room, CurrentUserId, _presenceTracker.GetOnlineUserIds(room.Id)));

@@ -189,6 +189,7 @@ public class VideoService : IVideoService
         {
             room.CurrentVideoId = null;
             room.CurrentVideo = null;
+            room.ResetPlayback(DateTime.UtcNow);
             await _roomRepository.SaveChangesAsync();
         }
 
