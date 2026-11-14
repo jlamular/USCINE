@@ -378,3 +378,57 @@ a.button {
   gap: 8px;
   margin-top: 16px;
 }
+
+.room-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.room-heading .room-title {
+  margin: 0;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #aab0bf;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b7280;
+  flex-shrink: 0;
+}
+
+.dot-online,
+.connection-connected .status-dot {
+  background: #3ecf6e;
+}
+
+.connection-connecting .status-dot,
+.connection-reconnecting .status-dot {
+  background: #f5b942;
+}
+
+.connection-disconnected .status-dot {
+  background: #ef5350;
+}
+
+.info-message {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  background: #1d2740;
+  border: 1px solid #2f4272;
+  border-radius: 8px;
+  color: #aecbff;
+  font-size: 0.9rem;
+}

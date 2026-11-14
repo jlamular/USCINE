@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import ErrorList from '../components/ErrorList';
 import RoomCard from '../components/RoomCard';
 import { useAuth } from '../hooks/useAuth';
@@ -8,7 +8,8 @@ import { formatDate } from '../utils/dateUtils';
 
 function Dashboard() {
   const { user, updateDisplayName } = useAuth();
-
+  const location = useLocation();
+  const notice = location.state?.notice;
   const [rooms, setRooms] = useState([]);
   const [isLoadingRooms, setIsLoadingRooms] = useState(true);
   const [roomErrors, setRoomErrors] = useState([]);
@@ -76,6 +77,7 @@ function Dashboard() {
           </div>
         </div>
 
+        {notice && <p className="info-message">{notice}</p>}
         <ErrorList errors={roomErrors} />
 
         {isLoadingRooms && <p className="muted">Loading your rooms...</p>}

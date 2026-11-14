@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import ConnectionStatus from '../components/ConnectionStatus';
 import CopyButton from '../components/CopyButton';
 import ErrorList from '../components/ErrorList';
 import ParticipantList from '../components/ParticipantList';
 import { useAuth } from '../hooks/useAuth';
+import { useSignalR } from '../hooks/useSignalR';
 import { deleteRoom, getRoom, leaveRoom } from '../services/roomService';
 import { formatDate } from '../utils/dateUtils';
 import { buildInviteLink, formatRoomCode } from '../utils/roomUtils';
@@ -18,8 +20,8 @@ function WatchRoom() {
   const [loadError, setLoadError] = useState(null);
   const [actionErrors, setActionErrors] = useState([]);
   const [isWorking, setIsWorking] = useState(false);
-  const [refreshCount, setRefreshCount] = useState(0);
 
+  // Step 1: ask the REST API for the room. This also proves we are a member.
   useEffect(() => {
     let isCancelled = false;
 
@@ -46,7 +48,34 @@ function WatchRoom() {
     return () => {
       isCancelled = true;
     };
-  }, [roomId, refreshCount]);
+  }, [roomId]);
+
+  // Step 2: only after the room is loaded, open the live connection
+  const { status, reconnect } = useSignalR(room ? room.id : null, {
+    onRoomStateUpdated: (state) => {
+      setRoom((currentRoom) => {
+        if (!currentRoom) {
+          return currentRoom;
+        }
+
+        return { ...currentRoom, participants: state.participants };
+      });
+    },
+
+    onRoomClosed: () => {
+      // The host who deleted the room is already navigating away on their own
+      if (room && !room.isHost) {
+        navigate('/dashboard', { state: { notice: 'The host closed that room.' } });
+      }
+    },
+
+    onJoinFailed: () => {
+      setLoadError({
+        status: 404,
+        errors: ['This room does not exist, or you are not a member of it.'],
+      });
+    },
+  });
 
   async function handleLeave() {
     const confirmed = window.confirm('Leave this room? You will need the room code to join again.');
@@ -106,11 +135,16 @@ function WatchRoom() {
   }
 
   const inviteLink = buildInviteLink(room.roomCode);
+  const onlineCount = room.participants.filter((participant) => participant.isOnline).length;
 
   return (
     <div className="room-layout">
       <section className="room-main">
-        <h2 className="room-title">{room.roomName}</h2>
+        <div className="room-heading">
+          <h2 className="room-title">{room.roomName}</h2>
+          <ConnectionStatus status={status} onReconnect={reconnect} />
+        </div>
+
         <div className="player-placeholder">
           <p>The video player arrives in Phase 6.</p>
         </div>
@@ -118,16 +152,10 @@ function WatchRoom() {
 
       <aside className="room-sidebar">
         <div className="card">
-          <div className="info-row">
-            <h2 style={{ margin: 0 }}>Participants ({room.participants.length})</h2>
-            <button
-              className="button button-secondary button-small"
-              type="button"
-              onClick={() => setRefreshCount((count) => count + 1)}
-            >
-              Refresh
-            </button>
-          </div>
+          <h2 style={{ marginBottom: 4 }}>Participants ({room.participants.length})</h2>
+          <p className="muted small" style={{ marginBottom: 16 }}>
+            {onlineCount} online
+          </p>
           <ParticipantList participants={room.participants} currentUserId={user.id} />
         </div>
 

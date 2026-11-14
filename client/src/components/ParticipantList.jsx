@@ -15,6 +15,11 @@ function ParticipantList({ participants, currentUserId }) {
           </span>
 
           {participant.isHost && <span className="badge">Host</span>}
+
+          <span
+            className={participant.isOnline ? 'status-dot dot-online' : 'status-dot'}
+            title={participant.isOnline ? 'Online' : 'Offline'}
+          />
         </li>
       ))}
     </ul>
