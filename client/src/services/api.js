@@ -24,7 +24,7 @@ async function readJsonBody(response) {
   }
 }
 
-function extractErrors(status, data) {
+export function extractErrors(status, data) {
   if (data && Array.isArray(data.errors) && data.errors.length > 0) {
     return data.errors;
   }

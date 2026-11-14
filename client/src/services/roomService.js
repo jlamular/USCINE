@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost } from './api';
+import { apiDelete, apiGet, apiPost, apiPut } from './api';
 
 export function getMyRooms() {
   return apiGet('/api/rooms');
@@ -22,4 +22,7 @@ export function leaveRoom(roomId) {
 
 export function deleteRoom(roomId) {
   return apiDelete(`/api/rooms/${roomId}`);
+}
+export function selectCurrentVideo(roomId, videoId) {
+  return apiPut(`/api/rooms/${roomId}/current-video`, { videoId });
 }

@@ -4,10 +4,14 @@ import ConnectionStatus from '../components/ConnectionStatus';
 import CopyButton from '../components/CopyButton';
 import ErrorList from '../components/ErrorList';
 import ParticipantList from '../components/ParticipantList';
+import VideoLibrary from '../components/VideoLibrary';
+import VideoPlayer from '../components/VideoPlayer';
 import { useAuth } from '../hooks/useAuth';
 import { useSignalR } from '../hooks/useSignalR';
-import { deleteRoom, getRoom, leaveRoom } from '../services/roomService';
+import { useStreamUrl } from '../hooks/useStreamUrl';
+import { deleteRoom, getRoom, leaveRoom, selectCurrentVideo } from '../services/roomService';
 import { formatDate } from '../utils/dateUtils';
+import { formatDuration, formatFileSize } from '../utils/mediaUtils';
 import { buildInviteLink, formatRoomCode } from '../utils/roomUtils';
 
 function WatchRoom() {
@@ -58,7 +62,11 @@ function WatchRoom() {
           return currentRoom;
         }
 
-        return { ...currentRoom, participants: state.participants };
+        return {
+          ...currentRoom,
+          participants: state.participants,
+          currentVideo: state.currentVideo ?? null,
+        };
       });
     },
 
@@ -76,6 +84,34 @@ function WatchRoom() {
       });
     },
   });
+
+  // Step 3: turn the current video into a playable, token-protected URL
+  const currentVideo = room ? room.currentVideo : null;
+  const { streamUrl, error: streamError, refresh: refreshStream } = useStreamUrl(
+    currentVideo ? currentVideo.id : null,
+  );
+
+  async function handleSelectVideo(videoId) {
+    const updatedRoom = await selectCurrentVideo(room.id, videoId);
+
+    setRoom((currentRoom) => {
+      if (!currentRoom) {
+        return currentRoom;
+      }
+
+      return { ...currentRoom, currentVideo: updatedRoom.currentVideo };
+    });
+  }
+
+  function handleVideoDeleted(videoId) {
+    setRoom((currentRoom) => {
+      if (!currentRoom || currentRoom.currentVideo?.id !== videoId) {
+        return currentRoom;
+      }
+
+      return { ...currentRoom, currentVideo: null };
+    });
+  }
 
   async function handleLeave() {
     const confirmed = window.confirm('Leave this room? You will need the room code to join again.');
@@ -145,9 +181,39 @@ function WatchRoom() {
           <ConnectionStatus status={status} onReconnect={reconnect} />
         </div>
 
-        <div className="player-placeholder">
-          <p>The video player arrives in Phase 6.</p>
-        </div>
+        {currentVideo ? (
+          <>
+            <VideoPlayer
+              key={currentVideo.id}
+              src={streamUrl}
+              error={streamError ? 'Could not get access to this video.' : null}
+              onReload={refreshStream}
+            />
+
+            <h3 className="video-title">{currentVideo.fileName}</h3>
+            <p className="muted small">
+              {formatDuration(currentVideo.durationSeconds)} · {formatFileSize(currentVideo.fileSizeBytes)} · uploaded
+              by {currentVideo.uploadedByDisplayName}
+            </p>
+          </>
+        ) : (
+          <div className="player-placeholder">
+            <p>
+              {room.isHost
+                ? 'Upload a video below, then choose "Play in room".'
+                : 'The host has not chosen a video yet.'}
+            </p>
+          </div>
+        )}
+
+        {room.isHost && (
+          <VideoLibrary
+            roomId={room.id}
+            currentVideoId={currentVideo ? currentVideo.id : null}
+            onSelectVideo={handleSelectVideo}
+            onVideoDeleted={handleVideoDeleted}
+          />
+        )}
       </section>
 
       <aside className="room-sidebar">

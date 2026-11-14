@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using WatchTogether.Core.Interfaces;
 using WatchTogether.Infrastructure.Settings;
 
@@ -6,9 +7,11 @@ namespace WatchTogether.Infrastructure.Services;
 public class LocalVideoStorage : IVideoStorage
 {
     private readonly string _rootPath;
+    private readonly ILogger<LocalVideoStorage> _logger;
 
-    public LocalVideoStorage(StorageSettings settings)
+    public LocalVideoStorage(StorageSettings settings, ILogger<LocalVideoStorage> logger)
     {
+        _logger = logger;
         _rootPath = Path.GetFullPath(settings.VideosRootPath);
         Directory.CreateDirectory(_rootPath);
     }
@@ -50,11 +53,13 @@ public class LocalVideoStorage : IVideoStorage
             return null;
         }
 
+        // FileShare.Delete lets someone delete the file while it is being streamed.
+        // Without it, Windows refuses the delete and the file would stay on disk forever.
         return new FileStream(
             fullPath,
             FileMode.Open,
             FileAccess.Read,
-            FileShare.Read,
+            FileShare.Read | FileShare.Delete,
             bufferSize: 81920,
             useAsync: true);
     }
@@ -66,12 +71,20 @@ public class LocalVideoStorage : IVideoStorage
             File.Delete(GetSafePath(storedFileName));
             return true;
         }
-        catch (IOException)
+        catch (IOException exception)
         {
+            _logger.LogWarning(
+                exception,
+                "Could not delete video file {StoredFileName}. It stays on disk as an orphan.",
+                storedFileName);
             return false;
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException exception)
         {
+            _logger.LogWarning(
+                exception,
+                "Not allowed to delete video file {StoredFileName}. It stays on disk as an orphan.",
+                storedFileName);
             return false;
         }
     }
