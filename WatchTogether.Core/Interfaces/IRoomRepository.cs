@@ -21,4 +21,6 @@ public interface IRoomRepository
     Task RemoveParticipantAsync(RoomParticipant participant);
 
     Task DeleteRoomAsync(WatchRoom room);
+
+    Task SaveChangesAsync();
 }

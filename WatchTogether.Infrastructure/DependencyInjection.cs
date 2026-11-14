@@ -14,14 +14,19 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
         string connectionString,
-        JwtSettings jwtSettings)
+        JwtSettings jwtSettings,
+        StorageSettings storageSettings)
     {
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlServer(connectionString));
 
         services.AddSingleton(jwtSettings);
+        services.AddSingleton(storageSettings);
+
         services.AddScoped<ITokenService, JwtTokenService>();
         services.AddScoped<IRoomRepository, RoomRepository>();
+        services.AddScoped<IVideoRepository, VideoRepository>();
+        services.AddSingleton<IVideoStorage, LocalVideoStorage>();
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

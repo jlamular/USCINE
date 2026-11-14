@@ -129,6 +129,25 @@ public class RoomsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPut("{roomId:guid}/current-video")]
+    public async Task<IActionResult> SelectCurrentVideo(Guid roomId, SelectVideoRequestDto request)
+    {
+        ServiceResult<WatchRoom> result = await _roomService.SelectCurrentVideoAsync(
+            CurrentUserId,
+            roomId,
+            request.VideoId);
+
+        if (!result.Succeeded)
+        {
+            return ToErrorResponse(result);
+        }
+
+        // Everyone who has the room open learns about the new video immediately
+        await _roomNotifier.NotifyRoomStateChangedAsync(roomId);
+
+        WatchRoom room = result.Value!;
+        return Ok(RoomMapper.ToDetails(room, CurrentUserId, _presenceTracker.GetOnlineUserIds(room.Id)));
+    }
     private IActionResult ToErrorResponse(ServiceResult result)
     {
         var body = new ErrorResponseDto { Errors = result.Errors.ToList() };
@@ -140,4 +159,5 @@ public class RoomsController : ControllerBase
             _ => BadRequest(body)
         };
     }
+    
 }

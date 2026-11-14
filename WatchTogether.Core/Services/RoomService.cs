@@ -11,10 +11,17 @@ public class RoomService : IRoomService
     private const int MaxCodeGenerationAttempts = 5;
 
     private readonly IRoomRepository _roomRepository;
+    private readonly IVideoRepository _videoRepository;
+    private readonly IVideoStorage _videoStorage;
 
-    public RoomService(IRoomRepository roomRepository)
+    public RoomService(
+        IRoomRepository roomRepository,
+        IVideoRepository videoRepository,
+        IVideoStorage videoStorage)
     {
         _roomRepository = roomRepository;
+        _videoRepository = videoRepository;
+        _videoStorage = videoStorage;
     }
 
     public async Task<ServiceResult<WatchRoom>> CreateRoomAsync(string userId, string roomName)
@@ -133,9 +140,64 @@ public class RoomService : IRoomService
             return ServiceResult.Failure(ServiceErrorType.Forbidden, "Only the host can delete the room.");
         }
 
+                // The room points at its current video, and every video points back at the room.
+        // EF cannot tell which row to delete first, so we break the loop before deleting.
+        if (room.CurrentVideoId != null)
+        {
+            room.CurrentVideoId = null;
+            room.CurrentVideo = null;
+            await _roomRepository.SaveChangesAsync();
+        }
+
+        // The database removes the video rows together with the room. The files on disk are our job.
+        List<string> storedFileNames = await _videoRepository.GetStoredFileNamesForRoomAsync(roomId);
+
         await _roomRepository.DeleteRoomAsync(room);
 
+        foreach (string storedFileName in storedFileNames)
+        {
+            _videoStorage.Delete(storedFileName);
+        }
+
         return ServiceResult.Success();
+    }
+
+    public async Task<ServiceResult<WatchRoom>> SelectCurrentVideoAsync(string userId, Guid roomId, Guid? videoId)
+    {
+        WatchRoom? room = await _roomRepository.GetByIdWithParticipantsAsync(roomId);
+
+        if (room == null || !IsMember(room, userId))
+        {
+            return ServiceResult<WatchRoom>.Failure(ServiceErrorType.NotFound, "Room not found.");
+        }
+
+        if (room.HostUserId != userId)
+        {
+            return ServiceResult<WatchRoom>.Failure(ServiceErrorType.Forbidden, "Only the host can choose the video.");
+        }
+
+        if (videoId == null)
+        {
+            room.CurrentVideoId = null;
+            room.CurrentVideo = null;
+        }
+        else
+        {
+            Video? video = await _videoRepository.GetByIdAsync(videoId.Value);
+
+            // A video from another room must never be selectable
+            if (video == null || video.RoomId != roomId)
+            {
+                return ServiceResult<WatchRoom>.Failure(ServiceErrorType.NotFound, "Video not found in this room.");
+            }
+
+            room.CurrentVideoId = video.Id;
+            room.CurrentVideo = video;
+        }
+
+        await _roomRepository.SaveChangesAsync();
+
+        return ServiceResult<WatchRoom>.Success(room);
     }
 
     private static bool IsMember(WatchRoom room, string userId)

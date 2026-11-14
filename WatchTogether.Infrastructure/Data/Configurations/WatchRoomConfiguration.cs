@@ -33,5 +33,18 @@ public class WatchRoomConfiguration : IEntityTypeConfiguration<WatchRoom>
                .WithOne(participant => participant.Room)
                .HasForeignKey(participant => participant.RoomId)
                .OnDelete(DeleteBehavior.Cascade);
+
+        // Cascade: deleting a room removes its video records (the files are removed by RoomService)
+        builder.HasMany(room => room.Videos)
+               .WithOne(video => video.Room)
+               .HasForeignKey(video => video.RoomId)
+               .OnDelete(DeleteBehavior.Cascade);
+
+        // The video being shown. This must NOT cascade: SQL Server rejects a cascade loop between
+        // rooms and videos. RoomService clears it before a video is deleted.
+        builder.HasOne(room => room.CurrentVideo)
+               .WithMany()
+               .HasForeignKey(room => room.CurrentVideoId)
+               .OnDelete(DeleteBehavior.Restrict);
     }
 }

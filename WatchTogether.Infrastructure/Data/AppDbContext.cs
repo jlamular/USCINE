@@ -15,6 +15,7 @@ public class AppDbContext : IdentityUserContext<ApplicationUser>
 
     public DbSet<RoomParticipant> RoomParticipants => Set<RoomParticipant>();
 
+    public DbSet<Video> Videos => Set<Video>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

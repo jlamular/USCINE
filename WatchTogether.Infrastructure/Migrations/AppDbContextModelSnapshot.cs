@@ -192,6 +192,55 @@ namespace WatchTogether.Infrastructure.Migrations
                     b.ToTable("RoomParticipants");
                 });
 
+            modelBuilder.Entity("WatchTogether.Core.Entities.Video", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double>("DurationSeconds")
+                        .HasColumnType("float");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("UploadedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedByUserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StoredFileName")
+                        .IsUnique();
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.HasIndex("RoomId", "UploadedAtUtc");
+
+                    b.ToTable("Videos");
+                });
+
             modelBuilder.Entity("WatchTogether.Core.Entities.WatchRoom", b =>
                 {
                     b.Property<Guid>("Id")
@@ -200,6 +249,9 @@ namespace WatchTogether.Infrastructure.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CurrentVideoId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("HostUserId")
                         .IsRequired()
@@ -216,6 +268,8 @@ namespace WatchTogether.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CurrentVideoId");
 
                     b.HasIndex("HostUserId");
 
@@ -271,13 +325,39 @@ namespace WatchTogether.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("WatchTogether.Core.Entities.Video", b =>
+                {
+                    b.HasOne("WatchTogether.Core.Entities.WatchRoom", "Room")
+                        .WithMany("Videos")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WatchTogether.Core.Entities.ApplicationUser", "UploadedByUser")
+                        .WithMany()
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Room");
+
+                    b.Navigation("UploadedByUser");
+                });
+
             modelBuilder.Entity("WatchTogether.Core.Entities.WatchRoom", b =>
                 {
+                    b.HasOne("WatchTogether.Core.Entities.Video", "CurrentVideo")
+                        .WithMany()
+                        .HasForeignKey("CurrentVideoId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("WatchTogether.Core.Entities.ApplicationUser", "HostUser")
                         .WithMany()
                         .HasForeignKey("HostUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("CurrentVideo");
 
                     b.Navigation("HostUser");
                 });
@@ -285,6 +365,8 @@ namespace WatchTogether.Infrastructure.Migrations
             modelBuilder.Entity("WatchTogether.Core.Entities.WatchRoom", b =>
                 {
                     b.Navigation("Participants");
+
+                    b.Navigation("Videos");
                 });
 #pragma warning restore 612, 618
         }

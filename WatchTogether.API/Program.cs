@@ -6,6 +6,7 @@ using WatchTogether.API.DTOs;
 using WatchTogether.API.Hubs;
 using WatchTogether.API.Middleware;
 using WatchTogether.Core.Interfaces;
+using WatchTogether.Core.Models;
 using WatchTogether.Core.Services;
 using WatchTogether.Infrastructure;
 using WatchTogether.Infrastructure.Settings;
@@ -25,10 +26,25 @@ if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Le
         "Jwt:SecretKey is missing or too short. Set it with 'dotnet user-secrets' (at least 32 characters).");
 }
 
+StorageSettings storageSettings = builder.Configuration.GetSection("Storage").Get<StorageSettings>()
+    ?? new StorageSettings();
+
+// A relative path such as "App_Data/videos" is resolved against the API project folder
+storageSettings.VideosRootPath = Path.GetFullPath(
+    storageSettings.VideosRootPath,
+    builder.Environment.ContentRootPath);
+
 // 2. Register services
-builder.Services.AddInfrastructure(connectionString, jwtSettings);
+builder.Services.AddInfrastructure(connectionString, jwtSettings, storageSettings);
+
+builder.Services.AddSingleton(new VideoUploadOptions
+{
+    MaxFileSizeBytes = storageSettings.MaxVideoSizeMb * 1024L * 1024L
+});
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IVideoService, VideoService>();
 
 // Presence is live, shared state, so there is exactly one tracker for the whole application
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();

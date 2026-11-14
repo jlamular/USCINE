@@ -12,7 +12,13 @@ public class WatchRoom
 
     public ApplicationUser? HostUser { get; set; }
 
+    public Guid? CurrentVideoId { get; set; }
+
+    public Video? CurrentVideo { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
 
     public List<RoomParticipant> Participants { get; set; } = new List<RoomParticipant>();
+
+    public List<Video> Videos { get; set; } = new List<Video>();
 }

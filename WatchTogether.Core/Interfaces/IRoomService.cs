@@ -16,4 +16,6 @@ public interface IRoomService
     Task<ServiceResult> LeaveRoomAsync(string userId, Guid roomId);
 
     Task<ServiceResult> DeleteRoomAsync(string userId, Guid roomId);
+
+    Task<ServiceResult<WatchRoom>> SelectCurrentVideoAsync(string userId, Guid roomId, Guid? videoId);
 }

@@ -19,6 +19,11 @@ public class ExceptionHandlingMiddleware
         {
             await _next(context);
         }
+        catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+        {
+            // The client went away (for example it cancelled an upload). That is not a server error.
+            return;
+        }
         catch (Exception exception)
         {
             _logger.LogError(

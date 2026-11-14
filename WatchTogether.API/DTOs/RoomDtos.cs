@@ -59,8 +59,9 @@ public class RoomDetailsDto
     public bool IsHost { get; set; }
 
     public DateTime CreatedAt { get; set; }
-
+    public VideoDto? CurrentVideo { get; set; }
     public List<ParticipantDto> Participants { get; set; } = new List<ParticipantDto>();
+    
 }
 
 // Sent to everyone in a room over SignalR. It has nothing specific to one viewer,
@@ -68,6 +69,8 @@ public class RoomDetailsDto
 public class RoomStateDto
 {
     public Guid RoomId { get; set; }
+    public VideoDto? CurrentVideo { get; set; }
 
     public List<ParticipantDto> Participants { get; set; } = new List<ParticipantDto>();
+    
 }

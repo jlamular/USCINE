@@ -18,6 +18,8 @@ public class RoomRepository : IRoomRepository
     {
         return await _dbContext.WatchRooms
             .Include(room => room.HostUser)
+            .Include(room => room.CurrentVideo)
+                .ThenInclude(video => video!.UploadedByUser)
             .Include(room => room.Participants)
                 .ThenInclude(participant => participant.User)
             .FirstOrDefaultAsync(room => room.Id == roomId);
@@ -72,6 +74,12 @@ public class RoomRepository : IRoomRepository
     public async Task DeleteRoomAsync(WatchRoom room)
     {
         _dbContext.WatchRooms.Remove(room);
+        await _dbContext.SaveChangesAsync();
+    }
+
+    // Saves changes made to rooms that were loaded earlier in this same request
+    public async Task SaveChangesAsync()
+    {
         await _dbContext.SaveChangesAsync();
     }
 }

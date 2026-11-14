@@ -32,6 +32,7 @@ public static class RoomMapper
             HostUserId = room.HostUserId,
             IsHost = room.HostUserId == currentUserId,
             CreatedAt = room.CreatedAtUtc,
+            CurrentVideo = room.CurrentVideo == null ? null : ToVideoDto(room.CurrentVideo),
             Participants = ToParticipantDtos(room, onlineUserIds)
         };
     }
@@ -41,7 +42,22 @@ public static class RoomMapper
         return new RoomStateDto
         {
             RoomId = room.Id,
+            CurrentVideo = room.CurrentVideo == null ? null : ToVideoDto(room.CurrentVideo),
             Participants = ToParticipantDtos(room, onlineUserIds)
+        };
+    }
+
+    public static VideoDto ToVideoDto(Video video)
+    {
+        return new VideoDto
+        {
+            Id = video.Id,
+            RoomId = video.RoomId,
+            FileName = video.OriginalFileName,
+            FileSizeBytes = video.FileSizeBytes,
+            DurationSeconds = video.DurationSeconds,
+            UploadedByDisplayName = video.UploadedByUser?.DisplayName ?? string.Empty,
+            UploadedAt = video.UploadedAtUtc
         };
     }
 
