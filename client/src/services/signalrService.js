@@ -9,6 +9,7 @@ export const HubEvents = {
   RoomStateUpdated: 'RoomStateUpdated',
   RoomClosed: 'RoomClosed',
   PlaybackUpdated: 'PlaybackUpdated',
+  ReceiveMessage: 'ReceiveMessage',
 };
 
 export const HubMethods = {
@@ -18,6 +19,7 @@ export const HubMethods = {
   PauseVideo: 'PauseVideo',
   SeekVideo: 'SeekVideo',
   GetServerTime: 'GetServerTime',
+  SendMessage: 'SendMessage',
 };
 
 export function createRoomConnection() {

@@ -12,3 +12,20 @@ export function formatDate(value) {
     day: 'numeric',
   });
 }
+
+// "3:45 PM" for today, "Nov 14, 3:45 PM" for earlier days
+export function formatMessageTime(value) {
+  const date = parseUtcDate(value);
+  const time = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+
+  if (date.toDateString() === new Date().toDateString()) {
+    return time;
+  }
+
+  const day = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `${day}, ${time}`;
+}
+
+export function formatFullDateTime(value) {
+  return parseUtcDate(value).toLocaleString();
+}

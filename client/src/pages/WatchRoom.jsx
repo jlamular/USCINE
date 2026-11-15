@@ -14,6 +14,7 @@ import { deleteRoom, getRoom, leaveRoom, selectCurrentVideo } from '../services/
 import { formatDate } from '../utils/dateUtils';
 import { formatDuration, formatFileSize } from '../utils/mediaUtils';
 import { buildInviteLink, formatRoomCode } from '../utils/roomUtils';
+import ChatPanel from '../components/ChatPanel';
 
 function WatchRoom() {
   const { roomId } = useParams();
@@ -80,7 +81,7 @@ function WatchRoom() {
   }, [roomId]);
 
   // Step 2: only after the room is loaded, open the live connection
-  const { status, reconnect, invoke } = useSignalR(room ? room.id : null, {
+    const { status, reconnect, invoke, subscribe } = useSignalR(room ? room.id : null, {
     onRoomStateUpdated: (state) => {
       setRoom((currentRoom) => {
         if (!currentRoom) {
@@ -299,6 +300,14 @@ function WatchRoom() {
           </p>
           <ParticipantList participants={room.participants} currentUserId={user.id} />
         </div>
+        <ChatPanel
+          key={room.id}
+          roomId={room.id}
+          status={status}
+          invoke={invoke}
+          subscribe={subscribe}
+          currentUserId={user.id}
+        />
 
         <div className="card">
           <h2 style={{ marginTop: 0 }}>Room info</h2>

@@ -13,6 +13,10 @@ export function useSignalR(roomId, handlers) {
 
   const connectionRef = useRef(null);
 
+  // Components can listen to hub events through subscribe(). The list lives here, not on the connection,
+  // so it survives the connection being recreated (a new room, or the Reconnect button).
+  const listenersRef = useRef(new Map());
+
   // Always points at the latest handlers, so changing a handler never restarts the connection
   const handlersRef = useRef(handlers);
   useEffect(() => {
@@ -32,6 +36,14 @@ export function useSignalR(roomId, handlers) {
     function updateStatus(newStatus) {
       if (!isCancelled) {
         setStatus(newStatus);
+      }
+    }
+
+    function emit(eventName, payload) {
+      const eventListeners = listenersRef.current.get(eventName);
+
+      if (eventListeners) {
+        eventListeners.forEach((listener) => listener(payload));
       }
     }
 
@@ -61,6 +73,10 @@ export function useSignalR(roomId, handlers) {
 
     connection.on(HubEvents.PlaybackUpdated, (state) => {
       handlersRef.current.onPlaybackUpdated?.(state);
+    });
+
+    connection.on(HubEvents.ReceiveMessage, (message) => {
+      emit(HubEvents.ReceiveMessage, message);
     });
 
     connection.onreconnecting(() => updateStatus('reconnecting'));
@@ -127,5 +143,20 @@ export function useSignalR(roomId, handlers) {
     return connection.invoke(methodName, ...args);
   }, []);
 
-  return { status, reconnect, invoke };
+  // Listens to a hub event. Returns a function that stops listening (use it as an effect cleanup).
+  const subscribe = useCallback((eventName, handler) => {
+    const listeners = listenersRef.current;
+
+    if (!listeners.has(eventName)) {
+      listeners.set(eventName, new Set());
+    }
+
+    listeners.get(eventName).add(handler);
+
+    return () => {
+      listeners.get(eventName)?.delete(handler);
+    };
+  }, []);
+
+  return { status, reconnect, invoke, subscribe };
 }
