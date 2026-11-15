@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import ConnectionStatus from '../components/ConnectionStatus';
 import CopyButton from '../components/CopyButton';
@@ -9,6 +9,7 @@ import VideoPlayer from '../components/VideoPlayer';
 import { useAuth } from '../hooks/useAuth';
 import { useSignalR } from '../hooks/useSignalR';
 import { useStreamUrl } from '../hooks/useStreamUrl';
+import { useVideoSync } from '../hooks/useVideoSync';
 import { deleteRoom, getRoom, leaveRoom, selectCurrentVideo } from '../services/roomService';
 import { formatDate } from '../utils/dateUtils';
 import { formatDuration, formatFileSize } from '../utils/mediaUtils';
@@ -19,11 +20,35 @@ function WatchRoom() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const videoRef = useRef(null);
+  const commandInFlightRef = useRef(false);
+
   const [room, setRoom] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [actionErrors, setActionErrors] = useState([]);
   const [isWorking, setIsWorking] = useState(false);
+  const [playback, setPlayback] = useState(null);
+  const [playerReadyCount, setPlayerReadyCount] = useState(0);
+
+  // Keeps only the NEWEST playback state. Older or repeated messages are ignored by version number.
+  // isOwnEcho marks a message that arrived while the host's own command was on its way.
+  const acceptPlayback = useCallback((state, isOwnEcho) => {
+    setPlayback((current) => {
+      if (current && current.roomId === state.roomId && state.version <= current.version) {
+        return current;
+      }
+
+      return { ...state, isOwnEcho };
+    });
+  }, []);
+
+  const handleOwnCommandResult = useCallback(
+    (state) => {
+      acceptPlayback(state, true);
+    },
+    [acceptPlayback],
+  );
 
   // Step 1: ask the REST API for the room. This also proves we are a member.
   useEffect(() => {
@@ -55,7 +80,7 @@ function WatchRoom() {
   }, [roomId]);
 
   // Step 2: only after the room is loaded, open the live connection
-  const { status, reconnect } = useSignalR(room ? room.id : null, {
+  const { status, reconnect, invoke } = useSignalR(room ? room.id : null, {
     onRoomStateUpdated: (state) => {
       setRoom((currentRoom) => {
         if (!currentRoom) {
@@ -68,6 +93,10 @@ function WatchRoom() {
           currentVideo: state.currentVideo ?? null,
         };
       });
+    },
+
+    onPlaybackUpdated: (state) => {
+      acceptPlayback(state, commandInFlightRef.current);
     },
 
     onRoomClosed: () => {
@@ -90,6 +119,20 @@ function WatchRoom() {
   const { streamUrl, error: streamError, refresh: refreshStream } = useStreamUrl(
     currentVideo ? currentVideo.id : null,
   );
+
+  // Step 4: keep this video in step with the host's
+  const sync = useVideoSync({
+    roomId: room ? room.id : null,
+    videoRef,
+    videoId: currentVideo ? currentVideo.id : null,
+    playback,
+    isHost: room ? room.isHost : false,
+    status,
+    invoke,
+    playerReadyCount,
+    commandInFlightRef,
+    onServerState: handleOwnCommandResult,
+  });
 
   async function handleSelectVideo(videoId) {
     const updatedRoom = await selectCurrentVideo(room.id, videoId);
@@ -173,6 +216,18 @@ function WatchRoom() {
   const inviteLink = buildInviteLink(room.roomCode);
   const onlineCount = room.participants.filter((participant) => participant.isOnline).length;
 
+  let controlHint = '';
+  if (!room.isHost) {
+    controlHint = 'The host controls playback. Your volume and fullscreen are your own.';
+  } else if (status !== 'connected') {
+    controlHint = 'Reconnecting... playback controls are paused until the connection is back.';
+  }
+
+  const driftSeconds = sync.syncInfo.driftSeconds;
+  const driftText = `${driftSeconds >= 0 ? '+' : ''}${driftSeconds.toFixed(2)} s`;
+  const pingText =
+    sync.syncInfo.roundTripMs === null ? 'measuring...' : `${Math.round(sync.syncInfo.roundTripMs)} ms`;
+
   return (
     <div className="room-layout">
       <section className="room-main">
@@ -188,6 +243,16 @@ function WatchRoom() {
               src={streamUrl}
               error={streamError ? 'Could not get access to this video.' : null}
               onReload={refreshStream}
+              videoRef={videoRef}
+              canControl={sync.canControl}
+              controlHint={controlHint}
+              needsInteraction={sync.needsInteraction}
+              onPlayRequested={sync.requestPlay}
+              onPauseRequested={sync.requestPause}
+              onSeekRequested={sync.requestSeek}
+              onEnded={sync.requestEnded}
+              onReady={() => setPlayerReadyCount((count) => count + 1)}
+              onJoinPlayback={sync.joinPlayback}
             />
 
             <h3 className="video-title">{currentVideo.fileName}</h3>
@@ -195,6 +260,16 @@ function WatchRoom() {
               {formatDuration(currentVideo.durationSeconds)} · {formatFileSize(currentVideo.fileSizeBytes)} · uploaded
               by {currentVideo.uploadedByDisplayName}
             </p>
+
+            {playback && playback.videoId === currentVideo.id && (
+              <p className="muted small sync-readout">
+                {room.isHost
+                  ? `Hosting · ${playback.isPlaying ? 'playing' : 'paused'} · server ping ${pingText} · v${playback.version}`
+                  : `${playback.isPlaying ? 'Playing' : 'Paused'} · ${driftText} vs host · server ping ${pingText} · speed ${sync.syncInfo.rate.toFixed(2)}x · v${playback.version}`}
+              </p>
+            )}
+
+            {sync.commandError && <p className="command-error">{sync.commandError}</p>}
           </>
         ) : (
           <div className="player-placeholder">

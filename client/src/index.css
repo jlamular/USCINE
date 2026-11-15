@@ -635,3 +635,20 @@ a.button {
     display: none;
   }
 }
+
+.player-hint {
+  padding: 4px 14px 10px;
+  background: #12141a;
+  font-size: 0.78rem;
+  color: #aab0bf;
+}
+
+.sync-readout {
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.command-error {
+  margin: 8px 0 0;
+  color: #ff8a8a;
+  font-size: 0.85rem;
+}

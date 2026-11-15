@@ -13,9 +13,24 @@ function describeMediaError(mediaError) {
   return 'The video could not be played. The format may not be supported by this browser, or the access link may have expired.';
 }
 
-function VideoPlayer({ src, error, onReload }) {
+function VideoPlayer({
+  src,
+  error,
+  onReload,
+  videoRef: externalVideoRef,
+  canControl = false,
+  controlHint = '',
+  needsInteraction = false,
+  onPlayRequested,
+  onPauseRequested,
+  onSeekRequested,
+  onEnded,
+  onReady,
+  onJoinPlayback,
+}) {
   const containerRef = useRef(null);
-  const videoRef = useRef(null);
+  const internalVideoRef = useRef(null);
+  const videoRef = externalVideoRef ?? internalVideoRef;
   const lastTimeRef = useRef(0);
   const resumeAtRef = useRef(0);
 
@@ -52,6 +67,9 @@ function VideoPlayer({ src, error, onReload }) {
       video.currentTime = resumeAtRef.current;
       resumeAtRef.current = 0;
     }
+
+    // Tells the page the video can now be synchronized
+    onReady?.();
   }
 
   function handleTimeUpdate() {
@@ -88,21 +106,21 @@ function VideoPlayer({ src, error, onReload }) {
     onReload();
   }
 
+  // The player only REPORTS the click. What happens next is decided by the sync hook.
   function togglePlay() {
     const video = videoRef.current;
-    if (!video) {
+    if (!video || !canControl) {
       return;
     }
 
     if (video.paused || video.ended) {
-      video.play().catch(() => {
-        // The browser refused or the request was interrupted. Nothing to do.
-      });
+      onPlayRequested?.();
     } else {
-      video.pause();
+      onPauseRequested?.();
     }
   }
 
+  // Volume and fullscreen are personal: everyone controls their own
   function toggleMute() {
     videoRef.current.muted = !videoRef.current.muted;
   }
@@ -114,7 +132,7 @@ function VideoPlayer({ src, error, onReload }) {
     video.muted = newVolume === 0;
   }
 
-  // While dragging, only the slider moves. The video jumps when you let go.
+  // While dragging, only the slider moves. The seek is reported when you let go.
   function handleScrub(event) {
     setIsScrubbing(true);
     setScrubTime(Number(event.target.value));
@@ -125,9 +143,10 @@ function VideoPlayer({ src, error, onReload }) {
       return;
     }
 
-    videoRef.current.currentTime = scrubTime;
-    setCurrentTime(scrubTime);
+    const target = scrubTime;
+    setCurrentTime(target);
     setIsScrubbing(false);
+    onSeekRequested?.(target);
   }
 
   function toggleFullscreen() {
@@ -159,7 +178,10 @@ function VideoPlayer({ src, error, onReload }) {
             onTimeUpdate={handleTimeUpdate}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
-            onEnded={() => setIsPlaying(false)}
+            onEnded={() => {
+              setIsPlaying(false);
+              onEnded?.();
+            }}
             onWaiting={() => setIsBuffering(true)}
             onPlaying={() => {
               setIsBuffering(false);
@@ -179,9 +201,18 @@ function VideoPlayer({ src, error, onReload }) {
           </div>
         )}
 
-        {src && isBuffering && !message && (
+        {src && isBuffering && !message && !needsInteraction && (
           <div className="player-overlay overlay-passive">
             <p>Buffering...</p>
+          </div>
+        )}
+
+        {!message && needsInteraction && (
+          <div className="player-overlay">
+            <p>The host is playing the video.</p>
+            <button className="button" type="button" onClick={onJoinPlayback}>
+              Click to join
+            </button>
           </div>
         )}
 
@@ -200,7 +231,7 @@ function VideoPlayer({ src, error, onReload }) {
           className="control-button"
           type="button"
           onClick={togglePlay}
-          disabled={!src}
+          disabled={!src || !canControl}
           aria-label={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? '❚❚' : '▶'}
@@ -217,7 +248,7 @@ function VideoPlayer({ src, error, onReload }) {
           max={duration || 0}
           step="0.1"
           value={displayTime}
-          disabled={!duration}
+          disabled={!duration || !canControl}
           onChange={handleScrub}
           onPointerUp={commitSeek}
           onKeyUp={commitSeek}
@@ -255,6 +286,8 @@ function VideoPlayer({ src, error, onReload }) {
           ⛶
         </button>
       </div>
+
+      {controlHint && <div className="player-hint">{controlHint}</div>}
     </div>
   );
 }

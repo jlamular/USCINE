@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { HubConnectionState } from '@microsoft/signalr';
 import { createRoomConnection, HubEvents, HubMethods } from '../services/signalrService';
 
 function wait(milliseconds) {
@@ -9,6 +10,8 @@ function wait(milliseconds) {
 export function useSignalR(roomId, handlers) {
   const [status, setStatus] = useState('connecting');
   const [attempt, setAttempt] = useState(0);
+
+  const connectionRef = useRef(null);
 
   // Always points at the latest handlers, so changing a handler never restarts the connection
   const handlersRef = useRef(handlers);
@@ -24,6 +27,7 @@ export function useSignalR(roomId, handlers) {
 
     let isCancelled = false;
     const connection = createRoomConnection();
+    connectionRef.current = connection;
 
     function updateStatus(newStatus) {
       if (!isCancelled) {
@@ -55,10 +59,15 @@ export function useSignalR(roomId, handlers) {
       handlersRef.current.onRoomClosed?.(closedRoomId);
     });
 
+    connection.on(HubEvents.PlaybackUpdated, (state) => {
+      handlersRef.current.onPlaybackUpdated?.(state);
+    });
+
     connection.onreconnecting(() => updateStatus('reconnecting'));
 
     connection.onreconnected(() => {
       // A reconnect gives us a NEW connection id, so the server has forgotten that we were in the room.
+      // Joining again also makes the server send us the current playback state.
       joinRoom();
     });
 
@@ -93,6 +102,11 @@ export function useSignalR(roomId, handlers) {
 
     return () => {
       isCancelled = true;
+
+      if (connectionRef.current === connection) {
+        connectionRef.current = null;
+      }
+
       connection.stop();
     };
   }, [roomId, attempt]);
@@ -102,5 +116,16 @@ export function useSignalR(roomId, handlers) {
     setAttempt((count) => count + 1);
   }, []);
 
-  return { status, reconnect };
+  // Calls a method on the hub. Rejects straight away when there is no working connection.
+  const invoke = useCallback((methodName, ...args) => {
+    const connection = connectionRef.current;
+
+    if (!connection || connection.state !== HubConnectionState.Connected) {
+      return Promise.reject(new Error('Not connected.'));
+    }
+
+    return connection.invoke(methodName, ...args);
+  }, []);
+
+  return { status, reconnect, invoke };
 }

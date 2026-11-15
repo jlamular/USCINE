@@ -3,16 +3,21 @@ import { getToken } from './tokenStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// These names must match the server (WatchRoomHub and RoomNotifier) exactly, including the capital letters.
+// These names must match the server (HubEvents.cs, WatchRoomHub) exactly, including the capital letters.
 // SignalR never complains about an event name nobody sends, so a typo would fail silently.
 export const HubEvents = {
   RoomStateUpdated: 'RoomStateUpdated',
   RoomClosed: 'RoomClosed',
+  PlaybackUpdated: 'PlaybackUpdated',
 };
 
 export const HubMethods = {
   JoinRoom: 'JoinRoom',
   LeaveRoom: 'LeaveRoom',
+  PlayVideo: 'PlayVideo',
+  PauseVideo: 'PauseVideo',
+  SeekVideo: 'SeekVideo',
+  GetServerTime: 'GetServerTime',
 };
 
 export function createRoomConnection() {
