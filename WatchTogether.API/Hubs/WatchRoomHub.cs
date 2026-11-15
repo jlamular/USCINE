@@ -14,17 +14,20 @@ public class WatchRoomHub : Hub
 {
     private readonly IRoomService _roomService;
     private readonly IPlaybackService _playbackService;
+    private readonly IChatService _chatService;
     private readonly IPresenceTracker _presenceTracker;
     private readonly IRoomNotifier _roomNotifier;
 
     public WatchRoomHub(
         IRoomService roomService,
         IPlaybackService playbackService,
+        IChatService chatService,
         IPresenceTracker presenceTracker,
         IRoomNotifier roomNotifier)
     {
         _roomService = roomService;
         _playbackService = playbackService;
+        _chatService = chatService;
         _presenceTracker = presenceTracker;
         _roomNotifier = roomNotifier;
     }
@@ -135,5 +138,25 @@ public class WatchRoomHub : Hub
     {
         return Context.User?.GetUserId()
             ?? throw new HubException("You must be logged in.");
+    }
+        // The sender is taken from the verified login, never from the message. The returned DTO is what the
+    // sender sees right away. Everyone in the room (the sender included) also gets it as ReceiveMessage.
+    public async Task<ChatMessageDto> SendMessage(Guid roomId, string text)
+    {
+        ServiceResult<ChatMessage> result = await _chatService.SendMessageAsync(
+            GetCurrentUserId(),
+            roomId,
+            text ?? string.Empty);
+
+        if (!result.Succeeded)
+        {
+            throw new HubException(result.Errors[0]);
+        }
+
+        ChatMessageDto message = ChatMapper.ToDto(result.Value!);
+
+        await Clients.Group(GroupName(roomId)).SendAsync(HubEvents.ReceiveMessage, message);
+
+        return message;
     }
 }

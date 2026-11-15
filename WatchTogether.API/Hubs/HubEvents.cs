@@ -9,4 +9,5 @@ public static class HubEvents
     public const string RoomClosed = "RoomClosed";
 
     public const string PlaybackUpdated = "PlaybackUpdated";
+    public const string ReceiveMessage = "ReceiveMessage";
 }

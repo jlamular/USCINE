@@ -47,10 +47,14 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<IPlaybackService, PlaybackService>();
 
+builder.Services.AddSingleton<IChatRateLimiter, ChatRateLimiter>();
+builder.Services.AddScoped<IChatService, ChatService>();
+
 // Presence is live, shared state, so there is exactly one tracker for the whole application
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
 builder.Services.AddScoped<IRoomNotifier, RoomNotifier>();
 builder.Services.AddSignalR();
+
 
 builder.Services
     .AddControllers()
