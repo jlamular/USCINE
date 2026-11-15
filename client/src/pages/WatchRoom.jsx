@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import ChatPanel from '../components/ChatPanel';
 import ConnectionStatus from '../components/ConnectionStatus';
 import CopyButton from '../components/CopyButton';
 import ErrorList from '../components/ErrorList';
@@ -7,19 +8,23 @@ import ParticipantList from '../components/ParticipantList';
 import VideoLibrary from '../components/VideoLibrary';
 import VideoPlayer from '../components/VideoPlayer';
 import { useAuth } from '../hooks/useAuth';
+import { useConfirm } from '../hooks/useConfirm';
+import { usePageTitle } from '../hooks/usePageTitle';
 import { useSignalR } from '../hooks/useSignalR';
 import { useStreamUrl } from '../hooks/useStreamUrl';
+import { useToast } from '../hooks/useToast';
 import { useVideoSync } from '../hooks/useVideoSync';
 import { deleteRoom, getRoom, leaveRoom, selectCurrentVideo } from '../services/roomService';
 import { formatDate } from '../utils/dateUtils';
 import { formatDuration, formatFileSize } from '../utils/mediaUtils';
 import { buildInviteLink, formatRoomCode } from '../utils/roomUtils';
-import ChatPanel from '../components/ChatPanel';
 
 function WatchRoom() {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { confirm, confirmDialog } = useConfirm();
+  const { showToast } = useToast();
 
   const videoRef = useRef(null);
   const commandInFlightRef = useRef(false);
@@ -31,6 +36,8 @@ function WatchRoom() {
   const [isWorking, setIsWorking] = useState(false);
   const [playback, setPlayback] = useState(null);
   const [playerReadyCount, setPlayerReadyCount] = useState(0);
+
+  usePageTitle(room ? room.roomName : 'Room');
 
   // Keeps only the NEWEST playback state. Older or repeated messages are ignored by version number.
   // isOwnEcho marks a message that arrived while the host's own command was on its way.
@@ -81,7 +88,7 @@ function WatchRoom() {
   }, [roomId]);
 
   // Step 2: only after the room is loaded, open the live connection
-    const { status, reconnect, invoke, subscribe } = useSignalR(room ? room.id : null, {
+  const { status, reconnect, invoke, subscribe } = useSignalR(room ? room.id : null, {
     onRoomStateUpdated: (state) => {
       setRoom((currentRoom) => {
         if (!currentRoom) {
@@ -103,7 +110,8 @@ function WatchRoom() {
     onRoomClosed: () => {
       // The host who deleted the room is already navigating away on their own
       if (room && !room.isHost) {
-        navigate('/dashboard', { state: { notice: 'The host closed that room.' } });
+        showToast('The host closed that room.', 'info');
+        navigate('/dashboard');
       }
     },
 
@@ -158,7 +166,12 @@ function WatchRoom() {
   }
 
   async function handleLeave() {
-    const confirmed = window.confirm('Leave this room? You will need the room code to join again.');
+    const confirmed = await confirm({
+      title: 'Leave this room?',
+      message: 'You will need the room code or an invitation link to join again.',
+      confirmLabel: 'Leave room',
+    });
+
     if (!confirmed) {
       return;
     }
@@ -168,6 +181,7 @@ function WatchRoom() {
 
     try {
       await leaveRoom(room.id);
+      showToast('You left the room.', 'success');
       navigate('/dashboard');
     } catch (error) {
       setActionErrors(error.errors ?? ['Could not leave the room.']);
@@ -176,7 +190,13 @@ function WatchRoom() {
   }
 
   async function handleDelete() {
-    const confirmed = window.confirm('Delete this room for everyone? This cannot be undone.');
+    const confirmed = await confirm({
+      title: 'Delete this room?',
+      message: 'The room, its videos and its chat will be deleted for everyone. This cannot be undone.',
+      confirmLabel: 'Delete room',
+      danger: true,
+    });
+
     if (!confirmed) {
       return;
     }
@@ -186,6 +206,7 @@ function WatchRoom() {
 
     try {
       await deleteRoom(room.id);
+      showToast('Room deleted.', 'success');
       navigate('/dashboard');
     } catch (error) {
       setActionErrors(error.errors ?? ['Could not delete the room.']);
@@ -300,6 +321,7 @@ function WatchRoom() {
           </p>
           <ParticipantList participants={room.participants} currentUserId={user.id} />
         </div>
+
         <ChatPanel
           key={room.id}
           roomId={room.id}
@@ -341,6 +363,8 @@ function WatchRoom() {
           </div>
         </div>
       </aside>
+
+      {confirmDialog}
     </div>
   );
 }

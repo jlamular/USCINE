@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import ErrorList from './ErrorList';
 import VideoUploader from './VideoUploader';
+import { useConfirm } from '../hooks/useConfirm';
+import { useToast } from '../hooks/useToast';
 import { deleteVideo, getRoomVideos } from '../services/videoService';
 import { formatDuration, formatFileSize } from '../utils/mediaUtils';
 
 function VideoLibrary({ roomId, currentVideoId, onSelectVideo, onVideoDeleted }) {
+  const { confirm, confirmDialog } = useConfirm();
+  const { showToast } = useToast();
+
   const [videos, setVideos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errors, setErrors] = useState([]);
@@ -39,6 +44,7 @@ function VideoLibrary({ roomId, currentVideoId, onSelectVideo, onVideoDeleted })
 
   function handleUploaded(video) {
     setVideos((currentVideos) => [video, ...currentVideos]);
+    showToast(`"${video.fileName}" was uploaded.`, 'success');
   }
 
   async function handleSelect(videoId) {
@@ -47,6 +53,7 @@ function VideoLibrary({ roomId, currentVideoId, onSelectVideo, onVideoDeleted })
 
     try {
       await onSelectVideo(videoId);
+      showToast('The video is now playing in the room.', 'success');
     } catch (error) {
       setErrors(error.errors ?? ['Could not select the video.']);
     } finally {
@@ -55,7 +62,13 @@ function VideoLibrary({ roomId, currentVideoId, onSelectVideo, onVideoDeleted })
   }
 
   async function handleDelete(video) {
-    const confirmed = window.confirm(`Delete "${video.fileName}"? This cannot be undone.`);
+    const confirmed = await confirm({
+      title: 'Delete this video?',
+      message: `"${video.fileName}" will be removed for everyone in the room. This cannot be undone.`,
+      confirmLabel: 'Delete video',
+      danger: true,
+    });
+
     if (!confirmed) {
       return;
     }
@@ -67,6 +80,7 @@ function VideoLibrary({ roomId, currentVideoId, onSelectVideo, onVideoDeleted })
       await deleteVideo(video.id);
       setVideos((currentVideos) => currentVideos.filter((item) => item.id !== video.id));
       onVideoDeleted(video.id);
+      showToast('Video deleted.', 'success');
     } catch (error) {
       setErrors(error.errors ?? ['Could not delete the video.']);
     } finally {
@@ -137,6 +151,8 @@ function VideoLibrary({ roomId, currentVideoId, onSelectVideo, onVideoDeleted })
           })}
         </ul>
       )}
+
+      {confirmDialog}
     </div>
   );
 }

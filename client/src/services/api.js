@@ -2,6 +2,18 @@ import { getToken } from './tokenStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+let unauthorizedHandler = null;
+
+// The AuthProvider registers a function here. It runs when the server rejects a request from a
+// logged-in user with HTTP 401, which means the token expired or is no longer valid.
+export function setUnauthorizedHandler(handler) {
+  unauthorizedHandler = handler;
+}
+
+export function reportUnauthorized() {
+  unauthorizedHandler?.();
+}
+
 export class ApiError extends Error {
   constructor(status, errors) {
     super(errors[0] ?? 'Request failed.');
@@ -36,6 +48,10 @@ export function extractErrors(status, data) {
   return [`Something went wrong (status ${status}). Please try again.`];
 }
 
+function isLoginOrRegister(path) {
+  return path.startsWith('/api/auth/login') || path.startsWith('/api/auth/register');
+}
+
 async function request(method, path, body) {
   const headers = {};
 
@@ -62,6 +78,12 @@ async function request(method, path, body) {
   const data = await readJsonBody(response);
 
   if (!response.ok) {
+    // A wrong password also answers 401, but then there was no token to reject.
+    // Only a rejected token means "your session is over".
+    if (response.status === 401 && token && !isLoginOrRegister(path)) {
+      reportUnauthorized();
+    }
+
     throw new ApiError(response.status, extractErrors(response.status, data));
   }
 

@@ -757,3 +757,73 @@ a.button {
   text-decoration: underline;
   cursor: pointer;
 }
+
+.toast-container {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #2f3a52;
+  border-radius: 10px;
+  background: #1d2330;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 0.9rem;
+}
+
+.toast-success {
+  border-color: #25623a;
+  background: #16301f;
+  color: #9be3b0;
+}
+
+.toast-error {
+  border-color: #6b2b33;
+  background: #3a1d22;
+  color: #ffb3ba;
+}
+
+.toast button {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.confirm-dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid #262b36;
+  border-radius: 12px;
+  background: #171a21;
+  color: #e6e8ee;
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.confirm-dialog h2 {
+  margin-top: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}

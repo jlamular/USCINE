@@ -1,4 +1,4 @@
-import { ApiError, apiDelete, apiGet, apiPost, extractErrors } from './api';
+import { ApiError, apiDelete, apiGet, apiPost, extractErrors, reportUnauthorized } from './api';
 import { getToken } from './tokenStorage';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -53,7 +53,9 @@ export function uploadVideo(roomId, file, onProgress) {
 
     request.onload = () => {
       const data = parseJson(request.responseText);
-
+      if (request.status === 401) {
+        reportUnauthorized();
+      }
       if (request.status >= 200 && request.status < 300) {
         resolve(data);
         return;
