@@ -13,18 +13,21 @@ public class RoomService : IRoomService
     private readonly IRoomRepository _roomRepository;
     private readonly IVideoRepository _videoRepository;
     private readonly IVideoStorage _videoStorage;
+    private readonly IPresenceTracker _presenceTracker;
 
     public RoomService(
         IRoomRepository roomRepository,
         IVideoRepository videoRepository,
-        IVideoStorage videoStorage)
+        IVideoStorage videoStorage,
+        IPresenceTracker presenceTracker)
     {
         _roomRepository = roomRepository;
         _videoRepository = videoRepository;
         _videoStorage = videoStorage;
+        _presenceTracker = presenceTracker;
     }
 
-    public async Task<ServiceResult<WatchRoom>> CreateRoomAsync(string userId, string roomName)
+        public async Task<ServiceResult<WatchRoom>> CreateRoomAsync(string userId, string roomName, bool isPublic)
     {
         string cleanName = roomName.Trim();
 
@@ -42,6 +45,7 @@ public class RoomService : IRoomService
         {
             RoomCode = roomCode,
             RoomName = cleanName,
+            IsPublic = isPublic,
             HostUserId = userId,
             CreatedAtUtc = now,
             PlaybackUpdatedAtUtc = now
@@ -86,6 +90,41 @@ public class RoomService : IRoomService
 
         WatchRoom? roomWithParticipants = await _roomRepository.GetByIdWithParticipantsAsync(room.Id);
         return ServiceResult<WatchRoom>.Success(roomWithParticipants!);
+    }
+        public async Task<ServiceResult<WatchRoom>> JoinPublicRoomAsync(string userId, Guid roomId)
+    {
+        WatchRoom? room = await _roomRepository.GetByIdWithParticipantsAsync(roomId);
+
+        // A private room gets the same answer as a room that does not exist
+        if (room == null || !room.IsPublic)
+        {
+            return ServiceResult<WatchRoom>.Failure(ServiceErrorType.NotFound, "Room not found.");
+        }
+
+        if (!IsMember(room, userId))
+        {
+            await _roomRepository.AddParticipantAsync(new RoomParticipant
+            {
+                RoomId = room.Id,
+                UserId = userId,
+                Role = RoomRole.Participant,
+                JoinedAtUtc = DateTime.UtcNow
+            });
+        }
+
+        // Read it again so the new participant's name is loaded
+        WatchRoom? roomWithParticipants = await _roomRepository.GetByIdWithParticipantsAsync(room.Id);
+        return ServiceResult<WatchRoom>.Success(roomWithParticipants!);
+    }
+
+    public async Task<List<WatchRoom>> GetPublicRoomsAsync()
+    {
+        List<WatchRoom> publicRooms = await _roomRepository.GetPublicRoomsAsync();
+
+        // Presence is live, in-memory state. A room is listed only while its host has it open.
+        return publicRooms
+            .Where(room => _presenceTracker.GetOnlineUserIds(room.Id).Contains(room.HostUserId))
+            .ToList();
     }
 
     public async Task<List<WatchRoom>> GetMyRoomsAsync(string userId)
@@ -141,7 +180,7 @@ public class RoomService : IRoomService
             return ServiceResult.Failure(ServiceErrorType.Forbidden, "Only the host can delete the room.");
         }
 
-                // The room points at its current video, and every video points back at the room.
+        // The room points at its current video, and every video points back at the room.
         // EF cannot tell which row to delete first, so we break the loop before deleting.
         if (room.CurrentVideoId != null)
         {
@@ -194,7 +233,7 @@ public class RoomService : IRoomService
 
             room.CurrentVideoId = video.Id;
             room.CurrentVideo = video;
-                    
+
         }
         // A new (or removed) video always starts again from the beginning, paused
         room.ResetPlayback(DateTime.UtcNow);

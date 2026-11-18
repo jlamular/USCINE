@@ -7,6 +7,7 @@ public class WatchRoom
     public string RoomCode { get; set; } = string.Empty;
 
     public string RoomName { get; set; } = string.Empty;
+    public bool IsPublic { get; set; }
 
     public string HostUserId { get; set; } = string.Empty;
 

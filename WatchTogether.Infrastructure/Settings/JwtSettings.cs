@@ -10,5 +10,9 @@ public class JwtSettings
 
     public int ExpirationMinutes { get; set; } = 60;
 
+    // Guests have no password, so an expired token would lose their account and room.
+    // 24 hours matches the planned cleanup window.
+    public int GuestTokenExpirationMinutes { get; set; } = 1440;
+
     public int StreamTokenExpirationMinutes { get; set; } = 360;
 }

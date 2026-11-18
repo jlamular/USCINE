@@ -21,6 +21,8 @@ public class WatchRoomConfiguration : IEntityTypeConfiguration<WatchRoom>
         builder.Property(room => room.RoomName)
                .IsRequired()
                .HasMaxLength(50);
+               // "All public rooms" is a query we run often, so it gets an index
+        builder.HasIndex(room => room.IsPublic);
 
         // Restrict: deleting a user must never silently delete their rooms
         builder.HasOne(room => room.HostUser)

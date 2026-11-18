@@ -13,6 +13,7 @@ public static class RoomMapper
             Id = room.Id,
             RoomCode = room.RoomCode,
             RoomName = room.RoomName,
+            IsPublic = room.IsPublic,
             HostDisplayName = room.HostUser?.DisplayName ?? string.Empty,
             ParticipantCount = room.Participants.Count,
             IsHost = room.HostUserId == currentUserId,
@@ -30,6 +31,7 @@ public static class RoomMapper
             Id = room.Id,
             RoomCode = room.RoomCode,
             RoomName = room.RoomName,
+            IsPublic = room.IsPublic,
             HostUserId = room.HostUserId,
             IsHost = room.HostUserId == currentUserId,
             CreatedAt = room.CreatedAtUtc,
@@ -91,6 +93,23 @@ public static class RoomMapper
             UpdatedAtUnixMs = new DateTimeOffset(updatedAtUtc).ToUnixTimeMilliseconds(),
             ServerTimeUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             Version = state.Version
+        };
+    }
+
+        public static PublicRoomDto ToPublic(
+        WatchRoom room,
+        string currentUserId,
+        IReadOnlyCollection<string> onlineUserIds)
+    {
+        return new PublicRoomDto
+        {
+            Id = room.Id,
+            RoomName = room.RoomName,
+            HostDisplayName = room.HostUser?.DisplayName ?? string.Empty,
+            ParticipantCount = room.Participants.Count,
+            OnlineCount = onlineUserIds.Count,
+            IsMember = room.Participants.Any(participant => participant.UserId == currentUserId),
+            CreatedAt = room.CreatedAtUtc
         };
     }
 }

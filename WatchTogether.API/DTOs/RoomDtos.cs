@@ -7,6 +7,8 @@ public class CreateRoomRequestDto
     [Required]
     [StringLength(50, MinimumLength = 1, ErrorMessage = "Room name must be between 1 and 50 characters.")]
     public string RoomName { get; set; } = string.Empty;
+
+    public bool IsPublic { get; set; }
 }
 
 public class JoinRoomRequestDto
@@ -42,6 +44,7 @@ public class RoomSummaryDto
     public int ParticipantCount { get; set; }
 
     public bool IsHost { get; set; }
+    public bool IsPublic { get; set; }
 
     public DateTime CreatedAt { get; set; }
 }
@@ -57,6 +60,7 @@ public class RoomDetailsDto
     public string HostUserId { get; set; } = string.Empty;
 
     public bool IsHost { get; set; }
+    public bool IsPublic { get; set; }
 
     public DateTime CreatedAt { get; set; }
     public VideoDto? CurrentVideo { get; set; }
@@ -73,4 +77,23 @@ public class RoomStateDto
 
     public List<ParticipantDto> Participants { get; set; } = new List<ParticipantDto>();
     
+}
+
+// What a visitor sees in the "Join Public Room" list. There is deliberately no room code here.
+public class PublicRoomDto
+{
+    public Guid Id { get; set; }
+
+    public string RoomName { get; set; } = string.Empty;
+
+    public string HostDisplayName { get; set; } = string.Empty;
+
+    public int ParticipantCount { get; set; }
+
+    public int OnlineCount { get; set; }
+
+    // true when the current user already belongs to this room
+    public bool IsMember { get; set; }
+
+    public DateTime CreatedAt { get; set; }
 }

@@ -141,8 +141,16 @@ public class WatchRoomHub : Hub
     }
         // The sender is taken from the verified login, never from the message. The returned DTO is what the
     // sender sees right away. Everyone in the room (the sender included) also gets it as ReceiveMessage.
+        // The sender is taken from the verified login, never from the message. The returned DTO is what the
+    // sender sees right away. Everyone in the room (the sender included) also gets it as ReceiveMessage.
     public async Task<ChatMessageDto> SendMessage(Guid roomId, string text)
     {
+        // Guests may read the chat but not write in it. The decision comes from the signed token.
+        if (Context.User?.IsGuest() == true)
+        {
+            throw new HubException("Guests cannot chat. Register to send messages.");
+        }
+
         ServiceResult<ChatMessage> result = await _chatService.SendMessageAsync(
             GetCurrentUserId(),
             roomId,

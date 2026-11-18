@@ -54,7 +54,10 @@ public class RoomsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateRoom(CreateRoomRequestDto request)
     {
-        ServiceResult<WatchRoom> result = await _roomService.CreateRoomAsync(CurrentUserId, request.RoomName);
+        ServiceResult<WatchRoom> result = await _roomService.CreateRoomAsync(
+        CurrentUserId,
+        request.RoomName,
+        request.IsPublic);
 
         if (!result.Succeeded)
         {
@@ -71,6 +74,37 @@ public class RoomsController : ControllerBase
     public async Task<IActionResult> JoinRoom(JoinRoomRequestDto request)
     {
         ServiceResult<WatchRoom> result = await _roomService.JoinRoomAsync(CurrentUserId, request.RoomCode);
+
+        if (!result.Succeeded)
+        {
+            return ToErrorResponse(result);
+        }
+
+        WatchRoom room = result.Value!;
+
+        // Everyone who has the room open sees the new member appear
+        await _roomNotifier.NotifyRoomStateChangedAsync(room.Id);
+
+        return Ok(RoomMapper.ToDetails(room, CurrentUserId, _presenceTracker.GetOnlineUserIds(room.Id)));
+    }
+
+        // The "Join Public Room" list. Guests are logged-in users too, so [Authorize] on the class covers them.
+    [HttpGet("public")]
+    public async Task<IActionResult> GetPublicRooms()
+    {
+        List<WatchRoom> rooms = await _roomService.GetPublicRoomsAsync();
+
+        List<PublicRoomDto> dtos = rooms
+            .Select(room => RoomMapper.ToPublic(room, CurrentUserId, _presenceTracker.GetOnlineUserIds(room.Id)))
+            .ToList();
+
+        return Ok(dtos);
+    }
+
+    [HttpPost("{roomId:guid}/join-public")]
+    public async Task<IActionResult> JoinPublicRoom(Guid roomId)
+    {
+        ServiceResult<WatchRoom> result = await _roomService.JoinPublicRoomAsync(CurrentUserId, roomId);
 
         if (!result.Succeeded)
         {
@@ -160,5 +194,5 @@ public class RoomsController : ControllerBase
             _ => BadRequest(body)
         };
     }
-    
+
 }

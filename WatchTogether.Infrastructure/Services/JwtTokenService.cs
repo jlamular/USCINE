@@ -24,16 +24,27 @@ public class JwtTokenService : ITokenService
 
     public string CreateToken(ApplicationUser user)
     {
+        var claims = new List<Claim>
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty)
+        };
+
+        int lifetimeMinutes = _jwtSettings.ExpirationMinutes;
+
+        if (user.IsGuest)
+        {
+            // Registered users get no such claim at all, so "missing" always means "not a guest"
+            claims.Add(new Claim(AppClaims.IsGuest, "true"));
+            lifetimeMinutes = _jwtSettings.GuestTokenExpirationMinutes;
+        }
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty)
-            }),
+            Subject = new ClaimsIdentity(claims),
             Issuer = _jwtSettings.Issuer,
             Audience = _jwtSettings.Audience,
-            Expires = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
+            Expires = DateTime.UtcNow.AddMinutes(lifetimeMinutes),
             SigningCredentials = CreateSigningCredentials()
         };
 

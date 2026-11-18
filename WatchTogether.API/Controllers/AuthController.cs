@@ -49,6 +49,20 @@ public class AuthController : ControllerBase
         return Ok(CreateAuthResponse(result));
     }
 
+    // "Try as Guest": no body, no credentials. Rate limiting for this endpoint comes in 8.5A-5.
+    [HttpPost("guest")]
+    public async Task<IActionResult> CreateGuest()
+    {
+        AuthResult result = await _authService.CreateGuestAsync();
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(new ErrorResponseDto { Errors = result.Errors });
+        }
+
+        return Ok(CreateAuthResponse(result));
+    }
+
     [Authorize]
     [HttpGet("me")]
     public async Task<IActionResult> GetCurrentUser()
@@ -109,7 +123,8 @@ public class AuthController : ControllerBase
             Id = user.Id,
             Email = user.Email ?? string.Empty,
             DisplayName = user.DisplayName,
-            CreatedAt = user.CreatedAt
+            CreatedAt = user.CreatedAt,
+            IsGuest = user.IsGuest
         };
     }
 }

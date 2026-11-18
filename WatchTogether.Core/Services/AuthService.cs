@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using WatchTogether.Core.Entities;
 using WatchTogether.Core.Interfaces;
@@ -9,6 +10,10 @@ public class AuthService : IAuthService
 {
     private const int MinDisplayNameLength = 2;
     private const int MaxDisplayNameLength = 32;
+
+    // ".invalid" is reserved by the internet standards and can never receive mail.
+    // Identity needs an email, so every guest gets a unique fake one.
+    private const string GuestEmailDomain = "guest.invalid";
 
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ITokenService _tokenService;
@@ -58,7 +63,9 @@ public class AuthService : IAuthService
         const string invalidCredentialsMessage = "Invalid email or password.";
 
         ApplicationUser? user = await _userManager.FindByEmailAsync(email.Trim());
-        if (user == null)
+
+        // Guests have no password. Refusing them here (with the same message) closes that door explicitly.
+        if (user == null || user.IsGuest)
         {
             return AuthResult.Failure(invalidCredentialsMessage);
         }
@@ -79,6 +86,32 @@ public class AuthService : IAuthService
 
         string token = _tokenService.CreateToken(user);
         return AuthResult.Success(user, token);
+    }
+
+    public async Task<AuthResult> CreateGuestAsync()
+    {
+        string uniquePart = Guid.NewGuid().ToString("N");
+        string guestEmail = $"guest-{uniquePart}@{GuestEmailDomain}";
+        int randomNumber = RandomNumberGenerator.GetInt32(1000, 10000);
+
+        var guest = new ApplicationUser
+        {
+            UserName = guestEmail,
+            Email = guestEmail,
+            DisplayName = $"Guest-{randomNumber}",
+            CreatedAt = DateTime.UtcNow,
+            IsGuest = true
+        };
+
+        // No password is passed, so no password hash is stored
+        IdentityResult createResult = await _userManager.CreateAsync(guest);
+        if (!createResult.Succeeded)
+        {
+            return AuthResult.Failure(createResult.Errors.Select(error => error.Description));
+        }
+
+        string token = _tokenService.CreateToken(guest);
+        return AuthResult.Success(guest, token);
     }
 
     public async Task<ApplicationUser?> GetUserByIdAsync(string userId)

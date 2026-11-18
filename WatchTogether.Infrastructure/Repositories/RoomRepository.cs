@@ -41,6 +41,16 @@ public class RoomRepository : IRoomRepository
             .OrderByDescending(room => room.CreatedAtUtc)
             .ToListAsync();
     }
+    public async Task<List<WatchRoom>> GetPublicRoomsAsync()
+    {
+        return await _dbContext.WatchRooms
+            .AsNoTracking()
+            .Where(room => room.IsPublic)
+            .Include(room => room.HostUser)
+            .Include(room => room.Participants)
+            .OrderByDescending(room => room.CreatedAtUtc)
+            .ToListAsync();
+    }
 
     public async Task<bool> RoomCodeExistsAsync(string roomCode)
     {

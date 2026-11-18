@@ -5,11 +5,17 @@ namespace WatchTogether.Core.Interfaces;
 
 public interface IRoomService
 {
-    Task<ServiceResult<WatchRoom>> CreateRoomAsync(string userId, string roomName);
+    Task<ServiceResult<WatchRoom>> CreateRoomAsync(string userId, string roomName, bool isPublic);
 
     Task<ServiceResult<WatchRoom>> JoinRoomAsync(string userId, string roomCode);
 
+    // Joins a public room by its id. A room that is not public answers "not found", exactly like a missing room.
+    Task<ServiceResult<WatchRoom>> JoinPublicRoomAsync(string userId, Guid roomId);
+
     Task<List<WatchRoom>> GetMyRoomsAsync(string userId);
+
+    // Public rooms whose host currently has the room open
+    Task<List<WatchRoom>> GetPublicRoomsAsync();
 
     Task<ServiceResult<WatchRoom>> GetRoomAsync(string userId, Guid roomId);
 

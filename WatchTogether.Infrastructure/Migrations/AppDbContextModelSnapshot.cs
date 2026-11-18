@@ -115,6 +115,9 @@ namespace WatchTogether.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsGuest")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -292,6 +295,9 @@ namespace WatchTogether.Infrastructure.Migrations
                     b.Property<bool>("IsPlaying")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("bit");
+
                     b.Property<double>("PlaybackPositionSeconds")
                         .HasColumnType("float");
 
@@ -317,6 +323,8 @@ namespace WatchTogether.Infrastructure.Migrations
                     b.HasIndex("CurrentVideoId");
 
                     b.HasIndex("HostUserId");
+
+                    b.HasIndex("IsPublic");
 
                     b.HasIndex("RoomCode")
                         .IsUnique();
