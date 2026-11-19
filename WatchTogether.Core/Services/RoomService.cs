@@ -117,14 +117,28 @@ public class RoomService : IRoomService
         return ServiceResult<WatchRoom>.Success(roomWithParticipants!);
     }
 
-    public async Task<List<WatchRoom>> GetPublicRoomsAsync()
+        public async Task<List<WatchRoom>> GetPublicRoomsAsync()
     {
         List<WatchRoom> publicRooms = await _roomRepository.GetPublicRoomsAsync();
 
         // Presence is live, in-memory state. A room is listed only while its host has it open.
         return publicRooms
-            .Where(room => _presenceTracker.GetOnlineUserIds(room.Id).Contains(room.HostUserId))
+            .Where(room => IsHostOnline(room))
             .ToList();
+    }
+
+    public async Task<List<WatchRoom>> GetPublicRoomsWithOfflineHostAsync()
+    {
+        List<WatchRoom> publicRooms = await _roomRepository.GetPublicRoomsAsync();
+
+        return publicRooms
+            .Where(room => !IsHostOnline(room))
+            .ToList();
+    }
+
+    private bool IsHostOnline(WatchRoom room)
+    {
+        return _presenceTracker.GetOnlineUserIds(room.Id).Contains(room.HostUserId);
     }
 
     public async Task<List<WatchRoom>> GetMyRoomsAsync(string userId)

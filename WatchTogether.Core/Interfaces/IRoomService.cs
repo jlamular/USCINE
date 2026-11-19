@@ -16,6 +16,8 @@ public interface IRoomService
 
     // Public rooms whose host currently has the room open
     Task<List<WatchRoom>> GetPublicRoomsAsync();
+        // Public rooms whose host does NOT currently have the room open (used by the grace-period sweeper)
+    Task<List<WatchRoom>> GetPublicRoomsWithOfflineHostAsync();
 
     Task<ServiceResult<WatchRoom>> GetRoomAsync(string userId, Guid roomId);
 

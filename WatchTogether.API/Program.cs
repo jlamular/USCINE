@@ -10,6 +10,7 @@ using WatchTogether.Core.Models;
 using WatchTogether.Core.Services;
 using WatchTogether.Infrastructure;
 using WatchTogether.Infrastructure.Settings;
+using WatchTogether.API.BackgroundServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +29,9 @@ if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Le
 
 StorageSettings storageSettings = builder.Configuration.GetSection("Storage").Get<StorageSettings>()
     ?? new StorageSettings();
+
+PublicRoomOptions publicRoomOptions = builder.Configuration.GetSection("PublicRooms").Get<PublicRoomOptions>()
+    ?? new PublicRoomOptions();
 
 // A relative path such as "App_Data/videos" is resolved against the API project folder
 storageSettings.VideosRootPath = Path.GetFullPath(
@@ -54,6 +58,9 @@ builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IPresenceTracker, PresenceTracker>();
 builder.Services.AddScoped<IRoomNotifier, RoomNotifier>();
 builder.Services.AddSignalR();
+
+builder.Services.AddSingleton(publicRoomOptions);
+builder.Services.AddHostedService<PublicRoomGraceService>();
 
 
 builder.Services
