@@ -33,6 +33,9 @@ StorageSettings storageSettings = builder.Configuration.GetSection("Storage").Ge
 PublicRoomOptions publicRoomOptions = builder.Configuration.GetSection("PublicRooms").Get<PublicRoomOptions>()
     ?? new PublicRoomOptions();
 
+GuestCleanupOptions guestCleanupOptions = builder.Configuration.GetSection("GuestCleanup").Get<GuestCleanupOptions>()
+    ?? new GuestCleanupOptions();
+
 // A relative path such as "App_Data/videos" is resolved against the API project folder
 storageSettings.VideosRootPath = Path.GetFullPath(
     storageSettings.VideosRootPath,
@@ -62,6 +65,8 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton(publicRoomOptions);
 builder.Services.AddHostedService<PublicRoomGraceService>();
 
+builder.Services.AddSingleton(guestCleanupOptions);
+builder.Services.AddHostedService<GuestCleanupWorker>();
 
 builder.Services
     .AddControllers()

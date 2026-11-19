@@ -28,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<IVideoRepository, VideoRepository>();
         services.AddSingleton<IVideoStorage, LocalVideoStorage>();
         services.AddScoped<IChatRepository, ChatRepository>();
+        services.AddScoped<IGuestCleanupService, GuestCleanupService>();
+
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {
